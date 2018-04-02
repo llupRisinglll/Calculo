@@ -1,0 +1,8 @@
+{
+    "require": {
+        "twig/twig": "^2.0",
+        "twbs/bootstrap": "4.0.0-beta",
+        "mongodb/mongodb": "^1.1",
+        "cboden/ratchet": "^0.4.0"
+    }
+}

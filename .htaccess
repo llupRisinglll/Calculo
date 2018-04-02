@@ -1,0 +1,38 @@
+# Disable Directory Listing
+Options -Indexes
+
+# Set the Default Index File
+# Example: DirectoryIndex first.html index.htm index.html index.php
+DirectoryIndex main/index.php
+
+# ---- Setup Document Error Pages ---- #
+# Bad_Request
+# ErrorDocument 400 /main/layout/400.html
+# Unauthorized
+# ErrorDocument 401 /main/layout/401.html
+# Forbidden
+# ErrorDocument 403 /main/layout/404.html
+# Not_Found
+# rrorDocument 404 /main/layout/404.html
+# Internal_Server_Error
+# ErrorDocument 500 /error_504
+# ---- Setup Document Error Pages ---- #
+
+# Enable Rewriting
+RewriteEngine on
+
+# Prevents looping by checking an internal mod_rewrite variable REDIRECT_STATUS
+# which is set to 200 after first successful internal redirect.
+RewriteCond %{ENV:REDIRECT_STATUS} ^$
+
+# Make Sure that the file does not exists
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+#RewriteRule ^& main/res [L]
+RewriteRule ^(.*)$ / [PT,L]
+
+# Redirect All request into the index page
+#RewriteRule (.*) main/res/s$1 [L]
+
+# Author: Luis Edward M. Miranda - 2017

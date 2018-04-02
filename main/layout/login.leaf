@@ -1,0 +1,260 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Welcome to Calculo</title>
+	<!-- CSS -->
+
+	<link href="{{ config.CSS_DIR }}/roboto.css" rel="stylesheet">
+	<!-- Vendor CSS -->
+	<link rel="stylesheet" href="{{ config.CSS_DIR }}/font-awesome.min.css">
+	<link rel="stylesheet" href="{{ config.CSS_DIR }}/app.css">
+	<!-- Material Design Icons  -->
+	<link href="{{ config.CSS_DIR }}/icon.css" rel="stylesheet">
+
+</head>
+<body style="height: 100%; position: absolute; width: 100%; background: #a0c2ff url('{{ config.IMG_DIR }}/background-shapes1.png') bottom; background-size: cover">
+
+<div class="card" style="background-color: #ffffff59; border-color: #e5e5e5b8; box-shadow: 0 3px 5px #0000005e; width: 20rem; position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: auto; height: fit-content">
+
+	{% if config.attemptCount < 6 and config.resetRequest == false %}
+	<form id="loginPanel" action="tryLogin" method="post" class="card-block" style="width: inherit; ">
+
+		<h4 align="center">
+			<i class="material-icons md-36">face</i>
+			<span class="icon-text"  style="margin-left: 10px">Account Login</span>
+		</h4>
+
+		<div class="form-group">
+			<label for="username">
+				<b>Username:</b>
+			</label>
+			<input type="text" class="form-control" id="username" placeholder="Username">
+		</div>
+		<div class="form-group">
+			<label for="password">
+				<b>Password:</b>
+			</label>
+			<input type="password" class="form-control" id="password" placeholder="**********">
+		</div>
+
+		<div class="alert alert-warning" role="alert" id="securityWarning" style="display: none;">
+			<strong>Security Warning!</strong> You are about to have more than 5 failed login attempts for Administrative Account.
+		</div>
+
+		<div class="alert alert-danger" role="alert" id="loginErrorNote" style="display: none;">
+			<strong>Opps..  </strong> Authentication Error.
+		</div>
+		<div>
+			<a href="resetRequest">Forgot Password?</a>
+			<button type="submit" class="btn btn-primary pull-right">Login</button>
+		</div>
+
+	</form>
+
+	{% elseif config.attemptCount > 5 and config.resetRequest == false %}
+	{# Login Reactivator #}
+	<form id="resetForm" action="resetForm" method="post" class="card-block" style="width: inherit; ">
+
+		<div class="alert alert-warning" role="alert">
+			<b>You are temporary blocked from logging in because of suspicious login attempts. </b>
+			In Order to reactivate the login please input the secret code that the administrator received upon software release.
+		</div>
+		<div class="alert alert-danger" role="alert" id="invalidCode" style="display: none">
+			<b>Oopss.. </b>
+			Invalid Code...
+		</div>
+		<h6>
+			<b></b>
+		</h6>
+		<input type="text" id="secretCode" class="form-control" placeholder="Secret Code">
+		<input type="submit" value="Reactivate Login" class="form-control btn btn-primary">
+		<a href="resetRequest">Forgot Password? </a>
+	</form>
+
+	{% else %}
+	{# Password Reset #}
+	<form id="resetPass" action="resetPass" method="post" class="card-block">
+
+		<div class="alert alert-danger" role="alert" id="wrongAnswer" style="display: none">
+			<b>Oopss.. </b>
+			Wrong Answer
+		</div>
+
+		<div class="alert alert-warning" role="alert" id="passNotMatch" style="display: none">
+			<b>Hey!! </b>
+			Passwords don't match.
+		</div>
+
+		<div class="alert alert-info" role="alert">
+			<b>Answer the following question </b>
+			to reset Admin password.
+		</div>
+
+		<div class="alert alert-warning" role="alert">
+			<b>Contact Administrator </b>
+			to reset an employee's password.
+		</div>
+		<p><b>What is the email you submitted during the software contract.</b></p>
+		<input id="secretEmail" type="email" class="form-control" placeholder="Email Address">
+		<br>
+		<b>Select a New Password:</b>
+		<input id="secretPass1" type="password" class="form-control" placeholder="New Password">
+		<input id="secretPass2" type="password" class="form-control" placeholder="Confirm Password">
+		<input type="submit" value="Reset Password" class="form-control btn btn-primary">
+		<a href="removeRequest">Back to Login</a>
+	</form>
+	{% endif %}
+
+</div>
+
+{# jQuery  #}
+<script src="{{ config.VENDOR_DIR }}/jquery/jquery-3.2.1.min.js"></script>
+<script>
+
+	function resetAlerts(){
+        $("#loginErrorNote").hide();
+        $("#securityWarning").hide();
+	}
+
+    $("#loginPanel").submit(function(event) {
+
+        /* stop form from submitting normally */
+        event.preventDefault();
+
+        /* get the action attribute from the <form action=""> element */
+        var $form = $( this ),
+            url = $form.attr( 'action' );
+
+        /* Send the data using post with element id name and name2*/
+        var posting = $.post( url,
+	        {
+	            username: $('#username').val(),
+		        password: $('#password').val()
+	        });
+
+        /* Alerts the results */
+
+        posting.done(function( data ) {
+            console.log(data);
+            var $password = $("#password");
+
+            switch (data){
+	            case "STATUS|1":
+                    window.location.href = "/";
+	                break;
+	            case "STATUS|0":
+                    resetAlerts();
+	                $("#loginErrorNote").show();
+
+	                // This is to reset the form.
+	                $password.val("");
+	                break;
+
+	            case "ATTEMPT|5":
+                    resetAlerts();
+	                $("#securityWarning").show();
+
+                    // This is to reset the form.
+                    $password.val("");
+	                break;
+
+	            case "BLOCKED":
+	                // Redirect...
+	                window.location.href = "/";
+	                break;
+
+	            default:
+	                break;
+
+            }
+        });
+    });
+	$("#resetForm").submit(function (event) {
+        /* stop form from submitting normally */
+        event.preventDefault();
+
+        var $form = $( this ),
+            url = $form.attr( 'action' );
+
+        /* Send the data using post with element id name and name2*/
+        var posting = $.post( url,
+            {
+                secretCode: $('#secretCode').val()
+            });
+
+        posting.done(function( data ) {
+            switch (data){
+                case "right":
+                    window.location.href = "/";
+                    break;
+                case "wrong":
+                    var invalidCode = $("#invalidCode");
+                    invalidCode.hide();
+                    invalidCode.show();
+
+
+
+            }
+        });
+    });
+	$("#resetPass").submit(function (event) {
+        /* stop form from submitting normally */
+        event.preventDefault();
+
+        var $form = $( this ),
+            url = $form.attr( 'action' );
+
+        /* Send the data using post with element id name and name2*/
+        var posting = $.post( url,
+            {
+                secretEmail: $('#secretEmail').val()
+            });
+
+        posting.done(function( data ) {
+            var wrongAnswer = $("#wrongAnswer");
+            var passNotMatch = $("#passNotMatch");
+            var secretPass1 = $("#secretPass1"),
+                secretPass2 = $("#secretPass2");
+
+            switch (data){
+                case "right":
+                    if (secretPass1.val() === secretPass2.val()){
+                        var url = "changePassAdmin";
+
+                        var posting = $.post( url, {
+                            newPass: secretPass1.val()
+                        });
+                        posting.done(function( data ) {
+                            window.location.href = "/";
+                        });
+
+                    }else{
+                        wrongAnswer.hide();
+                        passNotMatch.hide();
+                        passNotMatch.show();
+
+                        // Reset the form of passwords
+                        secretPass1.val("");
+                        secretPass2.val("");
+                    }
+                    break;
+                case "wrong":
+                    passNotMatch.hide();
+                    wrongAnswer.hide();
+                    wrongAnswer.show();
+
+
+
+            }
+        });
+    })
+
+
+
+</script>
+</body>
+</html>

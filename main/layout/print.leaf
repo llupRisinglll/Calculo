@@ -1,0 +1,208 @@
+<html>
+<head>
+	<!-- App CSS -->
+	<link rel="stylesheet" href="{{ config.CSS_DIR }}/app.css">
+	<!-- Charts CSS -->
+	<link rel="stylesheet" href="{{ config.CSS_DIR }}/morris.min.css">
+</head>
+<body style="padding: 50px">
+<div>
+	<b>CALCULO Computer Generated  Document</b>
+</div>
+<div>
+</div>
+<div class="container-fluid" style="width: 6.5in">
+	<br><br><br>
+	<div>
+		<div id="yearlyArea2" style="height: 220px; position: relative; -webkit-tap-highlight-color: rgba(0, 0, 0, 0);"></div>
+	</div>
+	<div style="text-align: center;">
+		<b>Figure 1.0</b><br>
+		(<i>Monthly Statistical Report as of <span id="currentDatetime"></span></i>)
+	</div>
+</div>
+<br>
+
+<div style="text-align: justify; white-space: pre-wrap">
+	&#09; According to the statistical analysis shown in Figure 1.0, since the month of January until <span id="until">now</span>, the total number of visitors this year is <span id="yearlyTotalAmount">XXXX</span>. The average number of visitor of the establishment is <span id="yearlyAverageAmount">XXXX</span> with the highest number of <span id="yearlyMaxAmount">XXX</span> and minimum of <span id="yearlyMinAmount">XXXX</span>. This can conclude the we may have <span id="prediction">XXX</span> number of visitors for the next month (a <span id="outcomeType">xxxxx</span> outcome) with probability rate of <span id="probRate">XX.XX</span>.
+</div>
+
+{# jQuery  #}
+<script src="{{ config.VENDOR_DIR }}/jquery/jquery-3.2.1.min.js"></script>
+{#<!-- Theme Colors -->#}
+<script src="{{ config.JS_DIR }}/colors.js"></script>
+{#<!-- Initialize Charts -->#}
+<script src="{{ config.JS_DIR }}/raphael.min.js"></script>
+<script src="{{ config.JS_DIR }}/morris.min.js"></script>
+<script src="{{ config.JS_DIR }}/AjaxUpdate.js"></script>
+<script src="{{ config.JS_DIR }}/moment.js"></script>
+
+<script type="text/javascript">
+    var momentNow = moment();
+
+    var currentYear = new Date().getFullYear();
+
+    if (currentYear === {{ config.APP_YEAR }}){
+        $("#currentDatetime").text(momentNow.format('MMMM DD, YYYY'));
+        $("#until").text("now");
+    }else{
+        $("#currentDatetime").text("December {{ config.APP_YEAR }}");
+        $("#until").text("December {{ config.APP_YEAR }}")
+    }
+
+	{# Initialize the AjaxUpdate Class when the page is loaded #}
+    var ajaxUpdateP = new AjaxUpdate();
+    var monthNamesP = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var monthlyGraphP = Morris.Area({
+        element: 'yearlyArea2',
+        data: [],
+        xkey: 'date',
+        ykeys: ['amount'],
+        labels: ['No. of Visitors'],
+        xLabelFormat: function (x) { return monthNamesP[x.getMonth()]; },
+        xLabelMargin: 10,
+        lineColors: [colors[ 'chart-third' ]],
+        fillOpacity: .3,
+        grid: .1,
+        gridTextColor: '000',
+        resize: true,
+	    hideHover: "always"
+    });
+
+    monthlyGraphData = [];
+
+
+    function linearRegression(y, x){
+        var lr = {};
+        var n = y.length;
+        var sum_x = 0;
+        var sum_y = 0;
+        var sum_xy = 0;
+        var sum_xx = 0;
+        var sum_yy = 0;
+
+        for (var i = 0; i < y.length; i++) {
+
+            sum_x += x[i];
+            sum_y += y[i];
+            sum_xy += (x[i]*y[i]);
+            sum_xx += (x[i]*x[i]);
+            sum_yy += (y[i]*y[i]);
+        }
+
+        lr['slope'] = (n * sum_xy - sum_x * sum_y) / (n*sum_xx - sum_x * sum_x);
+        lr['intercept'] = (sum_y - lr.slope * sum_x)/n;
+        lr['r2'] = Math.pow((n*sum_xy - sum_x*sum_y)/Math.sqrt((n*sum_xx-sum_x*sum_x)*(n*sum_yy-sum_y*sum_y)),2);
+
+        return lr;
+    }
+
+    function linearPredict(a, b, x){
+        return (a*x) + b
+    }
+
+    function removeDecimal(x){
+        return Math.round(x);
+    }
+
+    function addComma(x) {
+        var parts = x.toString().split(".");
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        return parts.join(".");
+    }
+
+    function monthlyPrediction() {
+        var xArray = [], yArray = [];
+        var prediction, result;
+        /**
+         * Do the prediction thing for the Yearly Data
+         */
+        for (var i=0; i<monthlyGraphData.length; i++){
+            yArray.push(i);
+            xArray.push(monthlyGraphData[i]["amount"]);
+        }
+
+        prediction = linearRegression(yArray, xArray);
+        result = linearPredict(prediction["slope"], prediction["intercept"], monthlyGraphData.length);
+        // Predict an Exact Amount
+        var MaxValue, MinValue;
+        MaxValue = Math.max.apply(Math, xArray);
+        MinValue = Math.min.apply(Math, xArray);
+        var predictedValues = (MaxValue - MinValue) / 2;
+        var htmlTemplate;
+
+        if (result > 0 && result < 1){
+            predictedValues = removeDecimal(predictedValues);
+            predictedValues = addComma(predictedValues);
+            htmlTemplate = predictedValues;
+            $("#outcomeType").html("positive");
+        } else{
+            if(predictedValues === -Infinity){
+                htmlTemplate = $("<span/>", {"style": "color: #E53935"}).text("NULL");
+            } else{
+                predictedValues = removeDecimal(predictedValues);
+                predictedValues = addComma(predictedValues);
+                htmlTemplate = predictedValues;
+            }
+            $("#outcomeType").html("negative");
+        }
+
+        var accuracyRate;
+        if (isNaN(prediction["r2"])){
+            accuracyRate = "Unknown"
+        }else{
+            prediction["r2"] = Math.round(prediction["r2"] * 100) / 100;
+            accuracyRate = (prediction["r2"] * 100) + "%)"
+        }
+
+        $("#yearlyMaxAmount").html(addComma(MaxValue));
+        $("#yearlyMinAmount").html(addComma(MinValue));
+        $("#probRate").html(accuracyRate);
+        $("#prediction").html(htmlTemplate);
+    }
+
+
+    function updateYearlyGraph(year, update) {
+
+        ajaxUpdateP.getYearVisitor(year, function (data) {
+            var dataArray = JSON.parse(data);
+
+            /**
+             * Update the yearly Area Graph
+             */
+            if (dataArray.length === 0){
+                monthlyGraphP.setData();
+                monthlyGraphData = [];
+            }else{
+                monthlyGraphP.setData(dataArray);
+                monthlyGraphData = dataArray;
+            }
+
+            if (update){
+                monthlyPrediction();
+            }
+
+            /**
+             * Total Amount of Visitors in the year
+             * @type {number}
+             */
+            var fullYearAmount = 0;
+            for (var i = 0; i < dataArray.length; i++){
+                fullYearAmount += Number(dataArray[i]["amount"]);
+            }
+
+            var averageAmount = removeDecimal(fullYearAmount/dataArray.length);
+	        averageAmount = addComma(averageAmount);
+            fullYearAmount = addComma(fullYearAmount);
+
+	        $("#yearlyAverageAmount").text(averageAmount);
+            $("#yearlyTotalAmount").text(fullYearAmount);
+        });
+    }
+
+    updateYearlyGraph("{{ config.APP_YEAR }}", true);
+
+</script>
+
+</body>
+</html>

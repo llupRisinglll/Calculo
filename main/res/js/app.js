@@ -1,0 +1,1 @@
+AdminPlus.Sidebar.init(), AdminPlus.Scrollable();

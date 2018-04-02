@@ -1,0 +1,528 @@
+{% spaceless %}
+	{# Macro Functions will be in here #}
+	{% macro sidebarMenuItem(title, icon, link, active) %}
+		{% if active %}
+			<li class="sidebar-menu-item active">
+		{% else %}
+			<li class="sidebar-menu-item">
+		{% endif %}
+				<a class="sidebar-menu-button menu-ajax" href="{{ link }}"> <i class="sidebar-menu-icon material-icons">{{ icon }}</i> {{ title }} </a>
+			</li>
+	{% endmacro %}
+
+	{% import _self as def %}
+
+<!DOCTYPE html>
+<html class="bootstrap-layout"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<title>Calculo - Dashboard</title>
+	<!-- Prevent the demo from appearing in search engines (REMOVE THIS) -->
+	<meta name="robots" content="noindex">
+	<!-- Material Design Icons  -->
+	<link href="{{ config.CSS_DIR }}/icon.css" rel="stylesheet">
+	<!-- Roboto Web Font -->
+	<link href="{{ config.CSS_DIR }}/roboto.css" rel="stylesheet">
+	<!-- App CSS -->
+	<link rel="stylesheet" href="{{ config.CSS_DIR }}/app.css">
+	<!-- Charts CSS -->
+	<link rel="stylesheet" href="{{ config.CSS_DIR }}/morris.min.css">
+	<!-- Vendor CSS -->
+	<link rel="stylesheet" href="{{ config.CSS_DIR }}/font-awesome.min.css">
+	<style>
+		#ajaxContent{
+			visibility: hidden;
+		}
+		@media print{
+			body>*:not(#ajaxContent){
+				display: none;
+				visibility: hidden;
+			}
+			body>#ajaxContent{
+				display: block;
+				visibility: visible;
+			}
+		}
+	</style>
+</head>
+
+<body class="layout-container top-navbar si-l3-md-up breakpoint-1600">
+
+
+<!-- Navbar -->
+<nav class="navbar navbar-light bg-white navbar-full navbar-fixed-top">
+	<button class="navbar-toggler pull-xs-left hidden-md-up active" type="button" data-toggle="sidebar" data-target="#sidebarLeft"><span class="material-icons">menu</span></button>
+	<a class="navbar-brand first-child-md" href="{{ config.DNS }}">CALCULO</a>
+	<ul class="nav navbar-nav pull-xs-right hidden-sm-down">
+		<li class="nav-item">
+			<div class="btn-group navbar-btn">
+				<button id="deviceStatus" class="btn btn-default btn-rounded" style="color: #000; background: #fff; border-color: #cbd0d3; outline: none">Not Connected</button>
+				<a href="/logout" class="btn btn-orange btn-rounded">Logout</a>
+			</div>
+		</li>
+	</ul>
+	<!-- // END Menu -->
+</nav>
+<!-- // END Navbar -->
+<!-- Sidebar -->
+<div class="sidebar sidebar-left si-si-3 sidebar-dark ls-top-navbar-md-up simplebar sidebar-visible" id="sidebarLeft" data-scrollable="">
+	<div class="simplebar-track" style="display: none;">
+		<div class="simplebar-scrollbar" style="top: 2px; height: 366px;"></div>
+	</div>
+	<div class="simplebar-scroll-content">
+		<div class="simplebar-content">
+			<div class="sidebar-user">
+				<div class="media">
+					<div class="media-left media-middle p-r-0">
+						<img src="{{ config.IMG_DIR }}/admin-icon.png" alt="person" style="width: 60px" class="img-circle">
+					</div>
+					<div class="media-body media-middle">
+						<a href="#" class="sidebar-user-name">
+							{% if config.logAccountType == "admin" %}
+								Administrator
+							{% else %}
+								Employee
+							{% endif %}
+						</a>
+					</div>
+				</div>
+			</div>
+			<div class="sidebar-heading">Main Menu</div>
+			<!-- Menu -->
+			<ul class="sidebar-menu sm-bordered sm-active-button-bg">
+
+				{# Only Administrator can see the real-time analysis #}
+				{% if config.logAccountType == "admin" %}
+					{{ def.sidebarMenuItem("Dashboard", "home", "/mainInterface", true) }}
+					{{ def.sidebarMenuItem("Report Generation", "video_label", "/generate", false) }}
+
+				{% else %}
+					{{ def.sidebarMenuItem("Report Generation", "video_label", "/generate", true) }}
+				{% endif %}
+
+				<li class="sidebar-menu-item except">
+					<a class="sidebar-menu-button" href="#"> <i class="sidebar-menu-icon material-icons">settings</i> Accessibility </a>
+					<ul class="sidebar-submenu">
+
+						{# Only Administrator can add employees #}
+						{% if config.logAccountType == "admin" %}
+							<li class="sidebar-menu-item">
+								<a class="sidebar-menu-button menu-ajax" href="/employees">Employees</a>
+							</li>
+						{% endif %}
+
+						<li class="sidebar-menu-item">
+							<a class="sidebar-menu-button menu-ajax" href="/password">Change your Password</a>
+						</li>
+
+					</ul>
+				</li>
+			</ul>
+			<!-- // END Menu -->
+		</div>
+	</div>
+</div>
+{# Content #}
+<div class="layout-content">
+	<div class="simplebar-scroll-content">
+		<div class="simplebar-content">
+			<div class="container-fluid" id="dynamicContent">
+
+			</div>
+		</div>
+	</div>
+</div>
+
+<div id="ajaxContent"></div>
+
+<!-- Modal Add Employee -->
+<div class="modal fade" id="addEmployee" tabindex="-1" role="dialog" aria-labelledby="AddEmployee" aria-hidden="true">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="exampleModalLabel">Add Employee</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+
+			<div class="modal-body">
+				<div class="alert alert-success" role="alert" id="modalSuccess" style="display:none;">
+					<strong>Well done!</strong> You successfully added an employee account.
+				</div>
+				<div class="alert alert-info" role="alert" id="modalAlert" style="display:none;">
+					<strong>Opps!</strong> Passwords mismatched.
+				</div>
+				<div class="alert alert-danger" role="alert" id="modalError" style="display:none;">
+					<strong>Oh snap!</strong> Username already taken.
+				</div>
+
+				<div class="alert alert-warning" role="alert" id="modalWarning" style="display:none;">
+					<strong>Warning!</strong> Fill all forms of data.
+				</div>
+
+				<div class="form-group row">
+					<label for="example-text-input" class="col-5 col-form-label">
+						<b>Username:</b>
+					</label>
+					<div class="col-7">
+						<input class="form-control" type="text" id="username" placeholder="Username">
+					</div>
+				</div>
+				<div class="form-group row">
+					<label for="example-search-input" class="col-5 col-form-label">
+						<b>Password:</b>
+					</label>
+					<div class="col-7">
+						<input class="form-control" type="password" id="password" placeholder="Enter Password">
+					</div>
+				</div>
+				<div class="form-group row">
+					<label for="example-email-input" class="col-5 col-form-label">
+						<b>Confirm Password:</b>
+					</label>
+					<div class="col-7">
+						<input class="form-control" type="password" id="password2" placeholder="Confirm Password">
+					</div>
+				</div>
+			</div>
+
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+				<button type="button" class="btn btn-success" onclick="finalize()">Finalize</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- Modal Edit Employee -->
+<div class="modal fade" id="editEmployee" tabindex="-1" role="dialog" aria-labelledby="AddEmployee" aria-hidden="true">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Edit Employee: <span id="employeeUser"></span></h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+
+			<div class="modal-body">
+				<div class="alert alert-success" role="alert" id="modalSuccessEdit" style="display:none;">
+					<strong>Well done!</strong> You successfully edited an employee account.
+				</div>
+				<div class="alert alert-info" role="alert" id="modalAlertEdit" style="display:none;">
+					<strong>Opps!</strong> Passwords mismatched.
+				</div>
+				<div class="alert alert-danger" role="alert" id="modalErrorEdit" style="display:none;">
+					<strong>Oh snap!</strong> Username already taken.
+				</div>
+
+				<div class="alert alert-warning" role="alert" id="modalWarningEdit" style="display:none;">
+					<strong>Warning!</strong> Fill all forms of data.
+				</div>
+
+				<div class="form-group row">
+					<label for="example-text-input" class="col-5 col-form-label">
+						<b>Username:</b>
+					</label>
+					<div class="col-7">
+						<input class="form-control" type="text" id="usernameEdit" placeholder="Username">
+					</div>
+				</div>
+				<div class="form-group row">
+					<label for="example-search-input" class="col-5 col-form-label">
+						<b>New Password:</b>
+					</label>
+					<div class="col-7">
+						<input class="form-control" type="password" id="passwordEdit" placeholder="Enter New Password">
+					</div>
+				</div>
+				<div class="form-group row">
+					<label for="example-email-input" class="col-5 col-form-label">
+						<b>Confirm Password:</b>
+					</label>
+					<div class="col-7">
+						<input class="form-control" type="password" id="password2Edit" placeholder="Confirm New Password">
+					</div>
+				</div>
+				<p>
+					<b>Note: </b> Editing a username will always requires you to set a new password. This is to avoid database issues and improve security.
+				</p>
+			</div>
+
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+				<button type="button" class="btn btn-success" onclick="confirm()">Confirm</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- Modal Show Decrypted Password -->
+<div class="modal fade" id="showPassword" tabindex="-1" role="dialog" aria-labelledby="AddEmployee" aria-hidden="true">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Employee: <span id="employeeUserPass"></span></h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+
+			<div class="modal-body">
+				<b>Decrypted Password: </b><span id="decryptedPass"></span>
+			</div>
+
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- Modal Delete Confirmation -->
+<div class="modal fade" id="deleteEmployee" tabindex="-1" role="dialog" aria-labelledby="AddEmployee" aria-hidden="true">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Delete Employee: <span id="employeeUserDelete"></span></h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+
+			<div class="modal-body">
+				Are you sure to delete this employee user account permanently from the system?
+			</div>
+
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+				<button type="button" class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+{# jQuery  #}
+<script src="{{ config.VENDOR_DIR }}/jquery/jquery-3.2.1.min.js"></script>
+{#<!-- Bootstrap -->#}
+<script src="{{ config.JS_DIR }}/tether.min.js"></script>
+
+{#<script type="text/javascript" src="{{ config.VENDOR_DIR }}/twbs/bootstrap/js/dist/alert.js"></script>#}
+{#<script type="text/javascript" src="{{ config.VENDOR_DIR }}/twbs/bootstrap/js/dist/button.js"></script>#}
+{#<script type="text/javascript" src="{{ config.VENDOR_DIR }}/twbs/bootstrap/js/dist/carousel.js"></script>#}
+{#<script type="text/javascript" src="{{ config.VENDOR_DIR }}/twbs/bootstrap/js/dist/collapse.js"></script>#}
+{#<script type="text/javascript" src="{{ config.VENDOR_DIR }}/twbs/bootstrap/js/dist/dropdown.js"></script>#}
+{#<script type="text/javascript" src="{{ config.VENDOR_DIR }}/twbs/bootstrap/js/dist/modal.js"></script>#}
+{#<script type="text/javascript" src="{{ config.VENDOR_DIR }}/twbs/bootstrap/js/dist/tooltip.js"></script>#}
+{#<script type="text/javascript" src="{{ config.VENDOR_DIR }}/twbs/bootstrap/js/dist/popover.js"></script>#}
+{#<script type="text/javascript" src="{{ config.VENDOR_DIR }}/twbs/bootstrap/js/dist/scrollspy.js"></script>#}
+{#<script type="text/javascript" src="{{ config.VENDOR_DIR }}/twbs/bootstrap/js/dist/tab.js"></script>#}
+{#<script type="text/javascript" src="{{ config.VENDOR_DIR }}/twbs/bootstrap/js/dist/util.js"></script>#}
+
+{#<!-- AdminPlus -->#}
+<script src="{{ config.JS_DIR }}/main.js"></script>
+
+{#<!-- App JS -->#}
+<script src="{{ config.JS_DIR }}/app.js"></script>
+
+{#<!-- Theme Colors -->#}
+<script src="{{ config.JS_DIR }}/colors.js"></script>
+
+{#<!-- Charts JS -->#}
+<script src="{{ config.JS_DIR }}/raphael.min.js"></script>
+<script src="{{ config.JS_DIR }}/morris.min.js"></script>
+
+{#<!-- Initialize Charts -->#}
+<script src="{{ config.JS_DIR }}/socket.js"></script>
+<script src="{{ config.JS_DIR }}/AjaxUpdate.js"></script>
+<script src="{{ config.JS_DIR }}/moment.js"></script>
+
+<script type="text/javascript">
+
+	{# Initialize the AjaxUpdate Class when the page is loaded #}
+    var ajaxUpdate = new AjaxUpdate();
+
+
+    function editEmployee(username){
+        $("#employeeUser").text(username);
+        $("#editEmployee").modal("show");
+        $("#usernameEdit").val(username);
+
+    }
+
+    function deleteEmployee(username){
+        $("#employeeUserDelete").text(username);
+        $("#deleteEmployee").modal("show");
+    }
+
+    function hideAlerts() {
+        $("#modalSuccess").hide();
+        $("#modalError").hide();
+        $("#modalAlert").hide();
+        $("#modalWarning").hide();
+    }
+
+    function resetForms(){
+        $("#username").val("");
+        $("#password").val("");
+        $("#password2").val("");
+
+    }
+
+    var hideAlertEdit = function () {
+        $("#modalSuccessEdit").hide();
+        $("#modalErrorEdit").hide();
+        $("#modalAlertEdit").hide();
+        $("#modalWarningEdit").hide();
+    };
+
+    var resetEditForm = function () {
+        $("#usernameEdit").val("");
+        $("#passwordEdit").val("");
+        $("#password2Edit").val("");
+    };
+
+    // This is the function when you finalize a delete confimration
+	function confirmDelete() {
+        var username = $("#employeeUserDelete").text();
+
+        ajaxUpdate.deleteEmployee(username, function (data) {
+            if (data === "success"){
+
+                $("#deleteEmployee").modal("hide");
+
+                // Update the List of Employees
+                ajaxUpdate.getByURL("employees", function (data) {
+                    $("#dynamicContent").html(data);
+                })
+            } else{
+                alert("An unknown server error occurs while trying to delete the employee.")
+            }
+        });
+    }
+
+    // This is the function when you edit an employee
+    function confirm(){
+        var username = $("#usernameEdit").val(),
+            password = $("#passwordEdit").val(),
+            password2 = $("#password2Edit").val();
+
+        var oldUsername = $("#employeeUser").text();
+
+        if (username.length > 0 && password.length > 0 && password2.length > 0){
+            if (password === password2){
+
+                ajaxUpdate.editEmployee(oldUsername, username, password, function (data) {
+                    if (data === "success"){
+                        hideAlertEdit();
+                        $("#modalSuccessEdit").show();
+                        resetEditForm();
+
+                        // Update the List of Employees
+                        ajaxUpdate.getByURL("employees", function (data) {
+                            $("#dynamicContent").html(data);
+                        })
+                    } else{
+                        hideAlertEdit();
+                        $("#modalErrorEdit").show();
+                    }
+                });
+
+            }else{
+                hideAlertEdit();
+                $("#modalAlertEdit").show();
+            }
+        }else{
+            hideAlertEdit();
+            $("#modalWarningEdit").show();
+        }
+    }
+
+    // This is the function when you finalize the add employee
+    function finalize() {
+        var username = $("#username").val(),
+	        password = $("#password").val(),
+            password2 = $("#password2").val();
+
+        if (username.length > 0 && password.length > 0 && password2.length > 0){
+            if (password === password2){
+
+                ajaxUpdate.addEmployee(username, password, function (data) {
+                    if (data === "success"){
+                        hideAlerts();
+                        $("#modalSuccess").show();
+                        resetForms();
+
+                        // Update the List of Employees
+	                    ajaxUpdate.getByURL("employees", function (data) {
+                            $("#dynamicContent").html(data);
+	                    })
+
+                    } else{
+                        hideAlerts();
+                        $("#modalError").show();
+                    }
+                });
+
+            }else{
+                hideAlerts();
+                $("#modalAlert").show();
+            }
+        }else{
+            hideAlerts();
+			$("#modalWarning").show();
+        }
+    }
+
+    // HANDLE modal events
+    $('#addEmployee').on('show.bs.modal', function (e) {
+        hideAlerts();
+        resetForms();
+    });
+
+    // HANDLE modal events for edit employee
+    $('#editEmployee').on('show.bs.modal', function (e) {
+        hideAlertEdit();
+        resetEditForm();
+    });
+
+	$(".sidebar-menu-item").on("click", function (evt) {
+	    if (!$(this).hasClass("except")){
+            var url = $(this).find("a.menu-ajax").attr("href");
+
+            // Prevent Going to the Link
+            evt.preventDefault();
+
+            $("li.sidebar-menu-item.active").removeClass("active");
+            $(this).addClass("active");
+
+            if (url !== "#"){
+                ajaxUpdate.getByURL(url, function (data) {
+                    $("#dynamicContent").html(data);
+                });
+            }
+	    }
+    });
+
+
+	{# Initialize the Connection Class when the page is loaded #}
+    var conn = new Connection();
+
+    // When the Document is fully loaded
+    $(document).ready(function (){
+
+		{% if config.logAccountType == "admin" %}
+	        ajaxUpdate.getByURL("mainInterface", function (data) {
+	            $("#dynamicContent").html(data);
+	        });
+	    {% else %}
+	        ajaxUpdate.getByURL("generate", function (data) {
+	            $("#dynamicContent").html(data);
+	        });
+		{% endif %}
+    });
+</script>
+</body>
+</html>
+{% endspaceless %}

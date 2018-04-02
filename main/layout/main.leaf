@@ -1,0 +1,487 @@
+
+<div class="row" id="predictionChart">
+	<div class="col-md-8">
+		<h1 class="page-heading"><i class="material-icons">view_headline</i> <span class="icon-text"> Overview</span></h1>
+		<div class="card">
+			<div class="card-block">
+				<div class="media">
+					<div class="media-body">
+						<strong class="text-muted">Today [ Real-time Statistical Analysis ]</strong>
+						<p class="h2 m-b-0"> <strong id="fullTodayAmount">Loading...</strong> </p>
+					</div>
+					<div class="media-right media-middle">
+						<i class="material-icons md-48 text-muted-light">person_outline</i>
+					</div>
+				</div>
+				{# This is the SVG that Creates GRAPH STATISTICS #}
+				<div id="todayArea" style="height: 400px; position: relative; -webkit-tap-highlight-color: rgba(0, 0, 0, 0);"></div>
+				<div style="text-align: center; ">
+					<i>
+						(Real-time Analytics as of
+						<span id="datePart">Loading...</span>
+						<span> - </span>
+						<span id="timePart">Please wait</span>)
+					</i>
+				</div>
+			</div>
+
+		</div>
+	</div>
+	<div class="col-md-4">
+		<h4 class="page-heading"><i class="material-icons md-36">account_circle</i> <span class="icon-text"> Visitors Prediction</span></h4>
+		{# Tomorrow Prediction Card #}
+		<div class="card">
+			<div class="media">
+				<div class="media-body media-middle">
+					<div class="card-block h4 m-b-0">Tomorrow</div>
+				</div>
+				<div class="media-right media-middle">
+					<div class="card-block h4 m-b-0" id="todayPrediction" style="text-align: right;">Loading...</div>
+				</div>
+			</div>
+		</div>
+		{# Next Week Prediction Card #}
+		<div class="card">
+			<div class="media">
+				<div class="media-body media-middle">
+					<div class="card-block h4 m-b-0">Next Week</div>
+				</div>
+				<div class="media-right media-middle">
+					<div class="card-block h4 m-b-0" id="nextWeekPrediction" style="text-align: right;">Loading...</div>
+				</div>
+			</div>
+		</div>
+		{# Next Month Prediction Card #}
+		<div class="card">
+			<div class="media">
+				<div class="media-body media-middle">
+					<div class="card-block h4 m-b-0">Next Month</div>
+				</div>
+				<div class="media-right media-middle">
+					<div class="card-block h4 m-b-0" id="nextMonthPrediction" style="text-align: right;">Loading...</div>
+				</div>
+			</div>
+		</div>
+		{# Next Year Prediction Card #}
+		<div class="row">
+			<div class="col-md-4">
+				<div style="float: left; background: #9ccc65; height: 20px; width: 20px;"></div>
+				<div style="float: left; margin-left: 10px; font-size: 12px;">
+					<b>Positive Outcome</b>
+				</div>
+			</div>
+
+			<div class="col-md-4">
+				<div style="float: left;  background: #d0d0d0; height: 20px; width: 20px;"></div>
+				<div style="float: left; margin-left: 10px; font-size: 12px;">
+					<b>Probability Rate</b>
+				</div>
+			</div>
+			<div class="col-md-4">
+				<div style="float: left;  background: #E53935; height: 20px; width: 20px;"></div>
+				<div style="float: left; margin-left: 10px; font-size: 12px;">
+					<b>Negative Outcome</b>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="row" style="margin-bottom: 50px; ">
+	<div class="col-md-12">
+		<div class="card">
+			<div class="card-block">
+				This Web Application and the Hardware connected here (Raspberry Pi)
+				is only intended for my thesis and is <b>not for sale</b>. The frontend and backend of
+				the Web Application, also the Algorithm used in Image Processing is property of mine.
+				<br><b>- Luis Edward M. Miranda.</b>
+			</div>
+		</div>
+		<h4 class="page-heading"><span class="icon-text" > &copy; Luis Edward M. Miranda - 2017</span></h4>
+
+	</div>
+</div>
+
+<script type="text/javascript">
+
+    var monthlyGraphData = [],
+    weeklyGraphData = [],
+    todayGraph = Morris.Area({
+        element: 'todayArea',
+        data: [],
+        xkey: 'datetime',
+        ykeys: ['amount'],
+        labels: ['No. of Visitors'],
+        xLabels: "hour",
+        xLabelAngle: 60,
+        xLabelMargin: 0,
+        lineColors: [colors[ 'secondary-color' ]],
+        fillOpacity: .3,
+        grid: .1,
+        gridTextColor: '000',
+        resize: true
+    }),
+    todayGraphData = [];
+
+    function updateYearlyGraph(year, update) {
+
+        ajaxUpdate.getYearVisitor(year, function (data) {
+            var dataArray = JSON.parse(data);
+
+            /**
+             * Update the yearly Area Graph
+             */
+            if (dataArray.length === 0){
+                monthlyGraphData = [];
+            }else{
+                monthlyGraphData = dataArray;
+            }
+
+            if (update){
+                monthlyPrediction();
+            }
+        });
+    }
+
+    function daysInMonth(month, year) {
+        return new Date(year, month, 0).getDate();
+    }
+
+    function getWeekCount(month, year) {
+        date = new Date(year, month-1, 1);
+        day = date.getDay();
+        numDaysInMonth = new Date(year, month, 0).getDate();
+        return Math.ceil((numDaysInMonth + day) / 7);
+    }
+
+    function getEndofWeek(month, year, date){
+        var curr;
+        curr = new Date(year, month-1, date);
+
+        var sat;
+        sat = 6 - curr.getDay();
+        curr.setDate(curr.getDate()+sat);
+        return curr.getDate();
+    }
+
+    function getWeekIntervals(month, year) {
+        var arr = [],
+            currDate = 0;
+
+        for (var i=0; i < getWeekCount(month, year); i++) {
+            // Do this when you are in the first index
+            if (i === 0){
+                currDate = getEndofWeek(month, year, 1);
+                arr.push(currDate);
+            }
+            // Do this when the index is the last one
+            else if (i === getWeekCount(month, year)-1) {
+                if (getEndofWeek(month, year, currDate + 1) <= 7) {
+                    arr.push(daysInMonth(month, year));
+                }
+            }
+            // DO this when you are in the middle of an index
+            else {
+                arr.push(getEndofWeek(month, year, currDate+1));
+                currDate = getEndofWeek(month, year, currDate+1);
+            }
+        }
+
+        // Return the Array of Intervals
+        return arr;
+    }
+
+    function updateWeeklyGraph(month, year){
+        var weekendArray = getWeekIntervals(month, year);
+
+        ajaxUpdate.getWeeklyVisitor(weekendArray, month, year, function (data) {
+            var monthlyGraphData = JSON.parse(data);
+
+            var xArray = [], yArray = [];
+            var prediction, result;
+
+            /**
+             * Do the prediction thing for the Monthly Data
+             */
+            for (var i=0; i<monthlyGraphData.length; i++){
+                yArray.push(i);
+                xArray.push(Number(monthlyGraphData[i]["total"]));
+            }
+
+
+            prediction = linearRegression(yArray, xArray);
+            result = linearPredict(prediction["slope"], prediction["intercept"], monthlyGraphData.length);
+            // Predict an Exact Amount
+            var MaxValue, MinValue;
+            MaxValue = Math.max.apply(Math, xArray);
+            MinValue = Math.min.apply(Math, xArray);
+            var predictedValues = (MaxValue - MinValue) / 2;
+            var htmlTemplate;
+            if (result > 0 && result < 1){
+                predictedValues = removeDecimal(predictedValues);
+                predictedValues = addComma(predictedValues);
+                htmlTemplate = $("<span/>", {"style": "color: #9ccc65"}).text(predictedValues);
+            }
+            else{
+                if(predictedValues === -Infinity){
+                    htmlTemplate = $("<span/>", {"style": "color: #E53935"}).text("NULL");
+                } else{
+                    predictedValues = removeDecimal(predictedValues);
+                    predictedValues = addComma(predictedValues);
+                    htmlTemplate = $("<span/>", {"style": "color: #E53935"}).text(predictedValues);
+                }
+            }
+
+            var accuracyRate;
+            if (isNaN(prediction["r2"])){
+                accuracyRate = $("<span/>", {"style": "color: #d0d0d0; font-size: 14px"}).text(" Unknown");
+            }else{
+                prediction["r2"] = Math.round(prediction["r2"] * 100) / 100;
+                accuracyRate = $("<span/>", {"style": "color: #d0d0d0; font-size: 14px"}).text(" (Rate:" +(prediction["r2"] * 100) + "%)");
+            }
+
+            htmlTemplate.append(accuracyRate);
+
+            $("#nextWeekPrediction").html(htmlTemplate);
+
+        });
+    }
+
+    function updateTodayGraph(){
+
+        /**
+         * Load the all of the data today
+         */
+        ajaxUpdate.getTodayVisitor(function (data) {
+            var dataArr = JSON.parse(data);
+            var fullTodayTotal = 0;
+
+            for (var i=0; i < dataArr.length; i++){
+                fullTodayTotal += Number(dataArr[i]["amount"]);
+            }
+
+            fullTodayTotal = addComma(fullTodayTotal);
+            $("#fullTodayAmount").text(fullTodayTotal);
+
+            if (dataArr.length === 0){
+
+                todayGraph.setData();
+                todayGraphData = [];
+            }else{
+                todayGraph.setData(dataArr);
+                todayGraphData = dataArr;
+            }
+
+        });
+    }
+
+    function updateIntervalGraph(month, date, year){
+        var arr = date;
+        var start = String(year)+ "-" +String(month)+ "-" +String(arr[0]),
+            end = String(year)+ "-" +String(month)+ "-" +String(arr[1]);
+        /**
+         * Get the Visitors Data on the server
+         */
+        ajaxUpdate.getIntervalVisitor(start, end, function (data) {
+            var weeklyGraphData = JSON.parse(data);
+            var xArray = [], yArray = [];
+            var prediction, result;
+            /**
+             * Do the prediction thing for the Weekly Data
+             */
+            for (var i=0; i<weeklyGraphData.length; i++){
+                yArray.push(i);
+                xArray.push(Number(weeklyGraphData[i]["amount"]));
+            }
+
+            prediction = linearRegression(yArray, xArray);
+            result = linearPredict(prediction["slope"], prediction["intercept"], weeklyGraphData.length);
+
+            // Predict an Exact Amount
+            var MaxValue, MinValue;
+            MaxValue = Math.max.apply(Math, xArray);
+            MinValue = Math.min.apply(Math, xArray);
+            var predictedValues = (MaxValue - MinValue) / 2;
+            var htmlTemplate;
+            if (result > 0 && result < 1){
+                predictedValues = removeDecimal(predictedValues);
+                predictedValues = addComma(predictedValues);
+                htmlTemplate = $("<span/>", {"style": "color: #9ccc65"}).text(predictedValues);
+            }
+            else{
+                if(predictedValues === -Infinity){
+                    htmlTemplate = $("<span/>", {"style": "color: #E53935"}).text("NULL");
+                } else{
+                    predictedValues = removeDecimal(predictedValues);
+                    predictedValues = addComma(predictedValues);
+                    htmlTemplate = $("<span/>", {"style": "color: #E53935"}).text(predictedValues);
+                }
+            }
+
+            var accuracyRate;
+            if (isNaN(prediction["r2"])){
+                accuracyRate = $("<span/>", {"style": "color: #d0d0d0; font-size: 14px"}).text(" Unknown");
+            }else{
+                prediction["r2"] = Math.round(prediction["r2"] * 100) / 100;
+                accuracyRate = $("<span/>", {"style": "color: #d0d0d0; font-size: 14px"}).text(" (Rate:" +(prediction["r2"] * 100) + "%)");
+            }
+
+            htmlTemplate.append(accuracyRate);
+
+            $("#todayPrediction").html(htmlTemplate);
+
+        });
+
+
+    }
+    function linearRegression(y, x){
+        var lr = {};
+        var n = y.length;
+        var sum_x = 0;
+        var sum_y = 0;
+        var sum_xy = 0;
+        var sum_xx = 0;
+        var sum_yy = 0;
+
+        for (var i = 0; i < y.length; i++) {
+
+            sum_x += x[i];
+            sum_y += y[i];
+            sum_xy += (x[i]*y[i]);
+            sum_xx += (x[i]*x[i]);
+            sum_yy += (y[i]*y[i]);
+        }
+
+        lr['slope'] = (n * sum_xy - sum_x * sum_y) / (n*sum_xx - sum_x * sum_x);
+        lr['intercept'] = (sum_y - lr.slope * sum_x)/n;
+        lr['r2'] = Math.pow((n*sum_xy - sum_x*sum_y)/Math.sqrt((n*sum_xx-sum_x*sum_x)*(n*sum_yy-sum_y*sum_y)),2);
+
+        return lr;
+    }
+
+    function linearPredict(a, b, x){
+        return (a*x) + b
+    }
+
+
+
+    function betweenDate(min, max) {
+        var x = new Date().getDate();
+        return x >= min && x <= max;
+    }
+
+    function monthlyPrediction() {
+        var xArray = [], yArray = [];
+        var prediction, result;
+        /**
+         * Do the prediction thing for the Yearly Data
+         */
+        for (var i=0; i<monthlyGraphData.length; i++){
+            yArray.push(i);
+            xArray.push(monthlyGraphData[i]["amount"]);
+        }
+
+        prediction = linearRegression(yArray, xArray);
+        result = linearPredict(prediction["slope"], prediction["intercept"], monthlyGraphData.length);
+        // Predict an Exact Amount
+        var MaxValue, MinValue;
+        MaxValue = Math.max.apply(Math, xArray);
+        MinValue = Math.min.apply(Math, xArray);
+        var predictedValues = (MaxValue - MinValue) / 2;
+        var htmlTemplate;
+
+        if (result > 0 && result < 1){
+            predictedValues = removeDecimal(predictedValues);
+            predictedValues = addComma(predictedValues);
+            htmlTemplate = $("<span/>", {"style": "color: #9ccc65"}).text(predictedValues);
+        }
+        else{
+            if(predictedValues === -Infinity){
+                htmlTemplate = $("<span/>", {"style": "color: #E53935"}).text("NULL");
+            } else{
+                predictedValues = removeDecimal(predictedValues);
+                predictedValues = addComma(predictedValues);
+                htmlTemplate = $("<span/>", {"style": "color: #E53935"}).text(predictedValues);
+            }
+        }
+
+        var accuracyRate;
+        if (isNaN(prediction["r2"])){
+            accuracyRate = $("<span/>", {"style": "color: #d0d0d0; font-size: 14px"}).text(" Unknown");
+        }else{
+            prediction["r2"] = Math.round(prediction["r2"] * 100) / 100;
+            accuracyRate = $("<span/>", {"style": "color: #d0d0d0; font-size: 14px"}).text(" (Rate:" +(prediction["r2"] * 100) + "%)");
+        }
+
+        htmlTemplate.append(accuracyRate);
+
+        $("#nextMonthPrediction").html(htmlTemplate);
+    }
+
+    function removeDecimal(x){
+        return Math.round(x);
+    }
+
+    function addComma(x) {
+        var parts = x.toString().split(".");
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        return parts.join(".");
+    }
+
+    function updateIntervalSelection(month, year){
+        var weekendArray = getWeekIntervals(month, year);
+        var lastWEAval = 1;
+
+        for (var d=0; d < weekendArray.length; d++){
+            if (d === 0){
+                if(new Date().getFullYear() === year && betweenDate(1, weekendArray[d])) {
+                    return "1," +weekendArray[d];
+                }
+            }else{
+                if (new Date().getFullYear() === year && betweenDate((lastWEAval+1), weekendArray[d])) {
+                    return (lastWEAval + 1) + "," + weekendArray[d];
+                }
+            }
+            lastWEAval = weekendArray[d]
+        }
+    }
+
+
+</script>
+<script type="text/javascript">
+
+	{# Initialize the AjaxUpdate Class when the page is loaded #}
+    var ajaxUpdate = new AjaxUpdate();
+
+    var currentYear = new Date().getFullYear();
+
+    /**
+     * Update the Yearly Graph CHART
+     */
+    updateYearlyGraph(currentYear, true);
+
+
+    // Select the Current Month on the monthselection
+    var currentMonth = String(new Date().getMonth()+ 1);
+    /**
+     * Update the Weekly Graph Chart
+     */
+    updateWeeklyGraph(currentMonth, currentYear);
+
+    var arr = updateIntervalSelection(currentMonth, currentYear).split(",");
+    updateIntervalGraph(currentMonth, arr, currentYear);
+
+    updateTodayGraph();
+
+    /**
+     * Real-time HTML Clock
+     */
+    setInterval(function() {
+        var momentNow = moment();
+        $('#datePart').html(momentNow.format('MMMM DD') + ' '
+            + momentNow.format('dddd')
+                .substring(0,3).toUpperCase());
+        $('#timePart').html(momentNow.format('hh:mm:ss A'));
+    }, 1000);
+
+</script>

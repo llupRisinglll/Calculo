@@ -1,0 +1,46 @@
+
+<h4 class="page-heading">
+	<i class="material-icons md-36">list</i>
+	<span class="icon-text"> Employees: {{ ArrDATA|length }}</span>
+</h4>
+
+<table class="table table-bordered" style="width: 100%; background: #fafafa">
+	<tr style="font-weight: bold">
+		<td>Username</td>
+		<td>Password (Encrypted)</td>
+		<td style="width: 175px">Action</td>
+	</tr>
+
+	{% for data in ArrDATA %}
+		<tr>
+			<td>{{ data[0] }}</td>
+			<td>{{ data[1] }}</td>
+			<td>
+				<button class="btn btn-info" onclick="editEmployee('{{ data[0] }}');">Edit</button>
+				<button class="btn btn-danger" onclick="deleteEmployee('{{ data[0] }}');">Delete</button>
+			</td>
+		</tr>
+	{% endfor %}
+
+
+</table>
+<span><b>Note: </b> The password is encrypted as default to solve some security issues regarding software systems. </span>
+<button style="float: right" class="btn btn-success" data-toggle="modal" data-target="#addEmployee"><b>Add Employee</b></button>
+
+
+<link rel="stylesheet" href="{{ config.VENDOR_DIR }}\twbs\bootstrap\dist\css\bootstrap.css">
+<style type="text/css">
+	.navbar{
+		height: 56px !important;
+		line-height: 56px !important;
+		padding-top: 0 !important;
+		padding-bottom: 0 !important;
+		margin-bottom: 1.25rem !important;
+		border-bottom: 1px solid rgba(0,0,0,.1) !important;
+		position: fixed  !important;
+		display: block  !important;
+	}
+</style>
+<script type="text/javascript" src="{{ config.VENDOR_DIR }}/twbs/bootstrap/js/dist/util.js"></script>
+
+<script type="text/javascript" src="{{ config.VENDOR_DIR }}/twbs/bootstrap/js/dist/modal.js"></script>

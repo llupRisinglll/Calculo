@@ -7,6 +7,7 @@
 
 # Documentation
 * [Database Entity Relationship](docs/erd.md)
+* [Data Flow Diagram](docs/dfd.md)
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details

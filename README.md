@@ -3,6 +3,8 @@
 
 <p align="center">
     A web-based real-time statistical analysis and prediction of data received from raspberry pi hardware powered with computer vision technology for business establishments.
+    <br/>
+    <a href="docs/documentation.md">Explore Calculo Documentation  » </a>
 </p>
 
 ## Table of Content

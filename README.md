@@ -7,11 +7,16 @@
 
 ## Table of Content
 * [User Accounts](#user-accounts)
+* [Directories](#directories)
 * [Documentation](#documentation)
 * [License](#license)
 
 ## User Accounts
 The accounts has usertype (Administor and Employee). Employee can only generate report on a specific timeline while Administrator can both generate report and view/watch Real-time Statistical Analysis and prediction.
+
+## Directories
+* [PeopleCounterOp.py](PeopleCounterOp.py) and [Person.py](Person.py) is the script used in the python script used in the hardware systems.
+* [Docs](docs/) Folder is focused on the Documentation of this repository.
 
 ## Documentation
 * [Database Entity Relationship](docs/erd.md)

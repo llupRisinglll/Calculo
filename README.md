@@ -5,6 +5,11 @@
     A web-based real-time statistical analysis and prediction of data received from raspberry pi hardware powered with computer vision technology for business establishments.
 </p>
 
+## Table of Content
+* [User Accounts](#user-accounts)
+* [Documentation](#documentation)
+* [License](#license)
+
 ## User Accounts
 The accounts has usertype (Administor and Employee). Employee can only generate report on a specific timeline while Administrator can both generate report and view/watch Real-time Statistical Analysis and prediction.
 
